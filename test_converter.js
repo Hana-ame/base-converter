@@ -178,4 +178,12 @@ check('keysFor returns the pad keys for each base', () => {
   assert.strictEqual(C.keysFor('HEX') === C.keysFor('HEX'), false, 'returns a fresh array');
 });
 
+check('columnsFor returns a fixed grid column count per base', () => {
+  assert.strictEqual(C.columnsFor('DEC'), 5);
+  assert.strictEqual(C.columnsFor('HEX'), 6);
+  assert.strictEqual(C.columnsFor('BIN'), 2);
+  assert.strictEqual(C.columnsFor('OCT'), 4);
+  assert.strictEqual(C.columnsFor('BOGUS'), 5);
+});
+
 console.log('\nAll ' + passed + ' test groups passed.');

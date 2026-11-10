@@ -26,7 +26,8 @@
       allowed: '0-9 A-F',
       pattern: /^[0-9a-fA-F]+$/,
       charPattern: /^[0-9a-fA-F]$/,
-      keys: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F']
+      keys: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'],
+      columns: 6
     },
     BIN: {
       name: 'BIN',
@@ -37,7 +38,8 @@
       allowed: '0 1',
       pattern: /^[01]+$/,
       charPattern: /^[01]$/,
-      keys: ['0', '1']
+      keys: ['0', '1'],
+      columns: 2
     },
     OCT: {
       name: 'OCT',
@@ -48,7 +50,8 @@
       allowed: '0-7',
       pattern: /^[0-7]+$/,
       charPattern: /^[0-7]$/,
-      keys: ['0', '1', '2', '3', '4', '5', '6', '7']
+      keys: ['0', '1', '2', '3', '4', '5', '6', '7'],
+      columns: 4
     },
     DEC: {
       name: 'DEC',
@@ -59,7 +62,8 @@
       allowed: '0-9',
       pattern: /^[0-9]+$/,
       charPattern: /^[0-9]$/,
-      keys: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+      keys: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'],
+      columns: 5
     }
   };
 
@@ -277,6 +281,12 @@
     return def.keys.slice();
   }
 
+  /** Number of pad columns for a base (fixed grid, like a keypad). */
+  function columnsFor(base) {
+    var def = BASES[base] ? BASES[base] : BASES.DEC;
+    return def.columns || 5;
+  }
+
   return {
     BASE_ORDER: BASE_ORDER,
     BASES: BASES,
@@ -289,6 +299,7 @@
     format: format,
     bitLength: bitLength,
     convert: convert,
-    keysFor: keysFor
+    keysFor: keysFor,
+    columnsFor: columnsFor
   };
 });
