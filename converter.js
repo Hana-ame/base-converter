@@ -39,7 +39,7 @@
       pattern: /^[01]+$/,
       charPattern: /^[01]$/,
       keys: ['0', '1'],
-      columns: 2
+      columns: 4
     },
     OCT: {
       name: 'OCT',
@@ -51,7 +51,7 @@
       pattern: /^[0-7]+$/,
       charPattern: /^[0-7]$/,
       keys: ['0', '1', '2', '3', '4', '5', '6', '7'],
-      columns: 4
+      columns: 5
     },
     DEC: {
       name: 'DEC',
@@ -62,8 +62,8 @@
       allowed: '0-9',
       pattern: /^[0-9]+$/,
       charPattern: /^[0-9]$/,
-      keys: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'],
-      columns: 5
+      keys: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'],
+      columns: 3
     }
   };
 

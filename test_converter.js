@@ -168,7 +168,7 @@ check('large values beyond Number.MAX_SAFE_INTEGER', () => {
 });
 
 check('keysFor returns the pad keys for each base', () => {
-  assert.deepStrictEqual(C.keysFor('DEC'), ['0','1','2','3','4','5','6','7','8','9']);
+  assert.deepStrictEqual(C.keysFor('DEC'), ['1','2','3','4','5','6','7','8','9','0']);
   assert.deepStrictEqual(C.keysFor('BIN'), ['0','1']);
   assert.deepStrictEqual(C.keysFor('OCT'), ['0','1','2','3','4','5','6','7']);
   assert.strictEqual(C.keysFor('HEX').length, 16);
@@ -179,11 +179,11 @@ check('keysFor returns the pad keys for each base', () => {
 });
 
 check('columnsFor returns a fixed grid column count per base', () => {
-  assert.strictEqual(C.columnsFor('DEC'), 5);
+  assert.strictEqual(C.columnsFor('DEC'), 3);
   assert.strictEqual(C.columnsFor('HEX'), 6);
-  assert.strictEqual(C.columnsFor('BIN'), 2);
-  assert.strictEqual(C.columnsFor('OCT'), 4);
-  assert.strictEqual(C.columnsFor('BOGUS'), 5);
+  assert.strictEqual(C.columnsFor('BIN'), 4);
+  assert.strictEqual(C.columnsFor('OCT'), 5);
+  assert.strictEqual(C.columnsFor('BOGUS'), 3, 'unknown base falls back to DEC columns');
 });
 
 console.log('\nAll ' + passed + ' test groups passed.');
