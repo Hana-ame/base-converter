@@ -167,4 +167,15 @@ check('large values beyond Number.MAX_SAFE_INTEGER', () => {
   assert.strictEqual(C.parse(C.format(big, 'DEC'), 'DEC').value, big);
 });
 
+check('keysFor returns the pad keys for each base', () => {
+  assert.deepStrictEqual(C.keysFor('DEC'), ['0','1','2','3','4','5','6','7','8','9']);
+  assert.deepStrictEqual(C.keysFor('BIN'), ['0','1']);
+  assert.deepStrictEqual(C.keysFor('OCT'), ['0','1','2','3','4','5','6','7']);
+  assert.strictEqual(C.keysFor('HEX').length, 16);
+  assert.strictEqual(C.keysFor('HEX').includes('F'), true);
+  assert.deepStrictEqual(C.keysFor('BOGUS'), C.keysFor('DEC'));
+  assert.deepStrictEqual(C.keysFor('HEX'), C.keysFor('HEX'));
+  assert.strictEqual(C.keysFor('HEX') === C.keysFor('HEX'), false, 'returns a fresh array');
+});
+
 console.log('\nAll ' + passed + ' test groups passed.');

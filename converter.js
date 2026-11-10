@@ -25,7 +25,8 @@
       prefix: '0x',
       allowed: '0-9 A-F',
       pattern: /^[0-9a-fA-F]+$/,
-      charPattern: /^[0-9a-fA-F]$/
+      charPattern: /^[0-9a-fA-F]$/,
+      keys: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F']
     },
     BIN: {
       name: 'BIN',
@@ -35,7 +36,8 @@
       prefix: '0b',
       allowed: '0 1',
       pattern: /^[01]+$/,
-      charPattern: /^[01]$/
+      charPattern: /^[01]$/,
+      keys: ['0', '1']
     },
     OCT: {
       name: 'OCT',
@@ -45,7 +47,8 @@
       prefix: '0o',
       allowed: '0-7',
       pattern: /^[0-7]+$/,
-      charPattern: /^[0-7]$/
+      charPattern: /^[0-7]$/,
+      keys: ['0', '1', '2', '3', '4', '5', '6', '7']
     },
     DEC: {
       name: 'DEC',
@@ -55,7 +58,8 @@
       prefix: '',
       allowed: '0-9',
       pattern: /^[0-9]+$/,
-      charPattern: /^[0-9]$/
+      charPattern: /^[0-9]$/,
+      keys: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
     }
   };
 
@@ -267,6 +271,12 @@
     return out;
   }
 
+  /** Pad keys for a base (digits plus A-F for HEX). */
+  function keysFor(base) {
+    var def = BASES[base] ? BASES[base] : BASES.DEC;
+    return def.keys.slice();
+  }
+
   return {
     BASE_ORDER: BASE_ORDER,
     BASES: BASES,
@@ -278,6 +288,7 @@
     detectBase: detectBase,
     format: format,
     bitLength: bitLength,
-    convert: convert
+    convert: convert,
+    keysFor: keysFor
   };
 });
