@@ -180,7 +180,7 @@ check('keysFor returns the pad keys for each base', () => {
 
 check('columnsFor returns a fixed grid column count per base', () => {
   assert.strictEqual(C.columnsFor('DEC'), 3);
-  assert.strictEqual(C.columnsFor('HEX'), 6);
+  assert.strictEqual(C.columnsFor('HEX'), 4);
   assert.strictEqual(C.columnsFor('BIN'), 4);
   assert.strictEqual(C.columnsFor('OCT'), 5);
   assert.strictEqual(C.columnsFor('BOGUS'), 3, 'unknown base falls back to DEC columns');
@@ -191,10 +191,18 @@ check('rowsFor returns explicit row layout per base', () => {
   assert.deepStrictEqual(C.rowsFor('BIN'), [['0','1'],['CLEAR','BACK']]);
   assert.deepStrictEqual(C.rowsFor('OCT'), [['0','1','2','3'],['4','5','6','7'],['CLEAR','BACK']]);
   const hexRows = C.rowsFor('HEX');
-  assert.strictEqual(hexRows.length, 5);
-  assert.deepStrictEqual(hexRows[4], ['A','B','C','D','E','F'], 'A-F is its own (last) row');
-  // the C in A-F row is a real digit, not the clear action marker
-  assert.notStrictEqual(hexRows[4].indexOf('C'), -1);
+  // Windows-calc style: A-F down the left column, numpad on the right.
+  assert.strictEqual(hexRows.length, 6);
+  assert.deepStrictEqual(hexRows[0], ['A','7','8','9']);
+  assert.deepStrictEqual(hexRows[1], ['B','4','5','6']);
+  assert.deepStrictEqual(hexRows[2], ['C','1','2','3']);
+  assert.deepStrictEqual(hexRows[3], ['D','CLEAR','0','BACK']);
+  assert.deepStrictEqual(hexRows[4], ['E', null, null, null]);
+  assert.deepStrictEqual(hexRows[5], ['F', null, null, null]);
+  // A-F occupy the leftmost column (col 0) of every row
+  hexRows.forEach(function (row, i) {
+    assert.strictEqual(row[0], ['A','B','C','D','E','F'][i], 'row ' + i + ' left cell is A-F');
+  });
   // returns fresh copies
   assert.notStrictEqual(C.rowsFor('HEX'), C.rowsFor('HEX'));
   assert.notStrictEqual(C.rowsFor('HEX')[0], C.rowsFor('HEX')[0]);
