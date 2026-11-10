@@ -851,6 +851,7 @@
 
     function renderPad() {
       if (!pad) return;
+      if (typeof Core.keysFor !== 'function') return;
       var keys = Core.keysFor(state.base);
       var html = '';
       keys.forEach(function (key) {
@@ -986,7 +987,7 @@
       } catch (err) { /* some browsers on some inputs */ }
     }
 
-    pad.addEventListener('click', function (event) {
+    if (pad) pad.addEventListener('click', function (event) {
       var button = event.target.closest ? event.target.closest('button') : null;
       if (!button || !pad.contains(button)) return;
 
