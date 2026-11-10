@@ -168,7 +168,7 @@ check('large values beyond Number.MAX_SAFE_INTEGER', () => {
 });
 
 check('keysFor returns the pad keys for each base', () => {
-  assert.deepStrictEqual(C.keysFor('DEC'), ['1','2','3','4','5','6','7','8','9','0']);
+  assert.deepStrictEqual(C.keysFor('DEC'), ['7','8','9','4','5','6','1','2','3','0']);
   assert.deepStrictEqual(C.keysFor('BIN'), ['0','1']);
   assert.deepStrictEqual(C.keysFor('OCT'), ['0','1','2','3','4','5','6','7']);
   assert.strictEqual(C.keysFor('HEX').length, 16);
