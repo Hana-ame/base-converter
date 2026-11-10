@@ -34,7 +34,7 @@
         ['A', '7', '8', '9'],
         ['B', '4', '5', '6'],
         ['C', '1', '2', '3'],
-        ['D', 'CLEAR', '0', 'BACK'],
+        ['D', { key: '0', span: 2 }, 'BACK'],
         ['E', null, null, null],
         ['F', null, null, null]
       ]
@@ -50,7 +50,7 @@
       charPattern: /^[01]$/,
       keys: ['0', '1'],
       columns: 4,
-      rows: [['0', '1'], ['CLEAR', 'BACK']]
+      rows: [['0', '1'], ['BACK']]
     },
     OCT: {
       name: 'OCT',
@@ -63,7 +63,7 @@
       charPattern: /^[0-7]$/,
       keys: ['0', '1', '2', '3', '4', '5', '6', '7'],
       columns: 5,
-      rows: [['0', '1', '2', '3'], ['4', '5', '6', '7'], ['CLEAR', 'BACK']]
+      rows: [['0', '1', '2', '3'], ['4', '5', '6', '7'], ['BACK']]
     },
     DEC: {
       name: 'DEC',
@@ -76,7 +76,7 @@
       charPattern: /^[0-9]$/,
       keys: ['7', '8', '9', '4', '5', '6', '1', '2', '3', '0'],
       columns: 3,
-      rows: [['7', '8', '9'], ['4', '5', '6'], ['1', '2', '3'], ['0', 'CLEAR', 'BACK']]
+      rows: [['7', '8', '9'], ['4', '5', '6'], ['1', '2', '3'], [{ key: '0', span: 2 }, 'BACK']]
     }
   };
 
@@ -308,7 +308,14 @@
   function rowsFor(base) {
     var def = BASES[base] ? BASES[base] : BASES.DEC;
     if (def.rows && def.rows.length) {
-      return def.rows.map(function (row) { return row.slice(); });
+      // 深拷贝：对象单元格（如 { key:'0', span:2 }）也须返回新副本，避免调用方改动污染共享定义。
+      return def.rows.map(function (row) {
+        return row.map(function (cell) {
+          return (cell !== null && typeof cell === 'object')
+            ? { key: cell.key, span: cell.span }
+            : cell;
+        });
+      });
     }
     return [def.keys.slice()];
   }

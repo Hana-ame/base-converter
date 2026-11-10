@@ -187,25 +187,28 @@ check('columnsFor returns a fixed grid column count per base', () => {
 });
 
 check('rowsFor returns explicit row layout per base', () => {
-  assert.deepStrictEqual(C.rowsFor('DEC'), [['7','8','9'],['4','5','6'],['1','2','3'],['0','CLEAR','BACK']]);
-  assert.deepStrictEqual(C.rowsFor('BIN'), [['0','1'],['CLEAR','BACK']]);
-  assert.deepStrictEqual(C.rowsFor('OCT'), [['0','1','2','3'],['4','5','6','7'],['CLEAR','BACK']]);
+  assert.deepStrictEqual(C.rowsFor('DEC'), [['7','8','9'],['4','5','6'],['1','2','3'],[{key:'0',span:2},'BACK']]);
+  assert.deepStrictEqual(C.rowsFor('BIN'), [['0','1'],['BACK']]);
+  assert.deepStrictEqual(C.rowsFor('OCT'), [['0','1','2','3'],['4','5','6','7'],['BACK']]);
   const hexRows = C.rowsFor('HEX');
   // Windows-calc style: A-F down the left column, numpad on the right.
   assert.strictEqual(hexRows.length, 6);
   assert.deepStrictEqual(hexRows[0], ['A','7','8','9']);
   assert.deepStrictEqual(hexRows[1], ['B','4','5','6']);
   assert.deepStrictEqual(hexRows[2], ['C','1','2','3']);
-  assert.deepStrictEqual(hexRows[3], ['D','CLEAR','0','BACK']);
+  assert.deepStrictEqual(hexRows[3], ['D', {key:'0',span:2}, 'BACK']);
   assert.deepStrictEqual(hexRows[4], ['E', null, null, null]);
   assert.deepStrictEqual(hexRows[5], ['F', null, null, null]);
   // A-F occupy the leftmost column (col 0) of every row
   hexRows.forEach(function (row, i) {
     assert.strictEqual(row[0], ['A','B','C','D','E','F'][i], 'row ' + i + ' left cell is A-F');
   });
-  // returns fresh copies
+  // returns fresh copies (rows and object cells are not shared)
   assert.notStrictEqual(C.rowsFor('HEX'), C.rowsFor('HEX'));
   assert.notStrictEqual(C.rowsFor('HEX')[0], C.rowsFor('HEX')[0]);
+  assert.notStrictEqual(C.rowsFor('HEX')[3][1], C.rowsFor('HEX')[3][1]);
+  // the span-2 zero renders as an object key and stays independent
+  assert.deepStrictEqual(C.rowsFor('DEC')[3][0], {key:'0',span:2});
   // unknown base falls back to DEC
   assert.deepStrictEqual(C.rowsFor('BOGUS'), C.rowsFor('DEC'));
 });

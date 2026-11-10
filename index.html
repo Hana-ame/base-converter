@@ -585,6 +585,8 @@
 
   .pad button:focus-visible { outline: 2px solid rgba(87, 227, 180, .65); outline-offset: 2px; }
 
+  .pad button.span-2 { grid-column: span 2; }
+
   .pad button.fn {
     color: var(--muted);
     font-size: 12.5px;
@@ -860,14 +862,18 @@
     function padButton(cell) {
       // 'CLEAR' / 'BACK' are action markers (labels render as C / ⌫); a real
       // digit 'C' (hex) is treated as a key, never as the clear action.
-      var isClear = cell === 'CLEAR';
-      var isBack = cell === 'BACK';
-      var label = isClear ? 'C' : (isBack ? '⌫' : cell);
-      var cls = isClear ? ' fn danger' : (isBack ? ' fn' : '');
+      // An object cell { key, span } renders a key that spans `span` grid columns.
+      var isObj = cell !== null && typeof cell === 'object';
+      var key = isObj ? cell.key : cell;
+      var span = isObj ? (cell.span || 1) : 1;
+      var isClear = key === 'CLEAR';
+      var isBack = key === 'BACK';
+      var label = isClear ? 'C' : (isBack ? '⌫' : key);
+      var cls = (isClear ? ' fn danger' : (isBack ? ' fn' : '')) + (span > 1 ? ' span-' + span : '');
       var action = isClear ? ' data-action="clear"' : (isBack ? ' data-action="back"' : '');
-      var aria = isClear ? '清空输入' : (isBack ? '退格' : '输入 ' + cell);
-      var keyAttr = isClear || isBack ? '' : ' data-key="' + cell + '"';
-      return '<button type="button" class="' + cls + '"' + keyAttr + action + ' aria-label="' + aria + '">' + label + '</button>';
+      var aria = isClear ? '清空输入' : (isBack ? '退格' : '输入 ' + key);
+      var keyAttr = isClear || isBack ? '' : ' data-key="' + key + '"';
+      return '<button type="button" class="' + cls.trim() + '"' + keyAttr + action + ' aria-label="' + aria + '">' + label + '</button>';
     }
 
     function renderPad() {
@@ -878,15 +884,22 @@
         ? Core.rowsFor(state.base)
         : [Core.keysFor(state.base).concat(['CLEAR', 'BACK'])];
 
-      // 列数取最长一行（grid 需要固定列数；短行补 null 占位）。
+      // 列数取最长一行的有效宽度（span 键占多列；短行靠 grid 自动布局对齐，不补空格）。
       var columns = 0;
-      rows.forEach(function (row) { if (row.length > columns) columns = row.length; });
+      rows.forEach(function (row) {
+        var width = 0;
+        row.forEach(function (cell) {
+          width += (cell !== null && typeof cell === 'object') ? (cell.span || 1) : 1;
+        });
+        if (width > columns) columns = width;
+      });
       pad.style.setProperty('--pad-columns', String(columns || 4));
 
-      // 平铺成 grid 单元格：null / '' 渲染为空占位符。
+      // 平铺成 grid 单元格：null / '' 渲染为空占位符；span 键占多列（grid 自动布局会把
+      // 下一项排在跨列之后，因此这里按数组顺序逐个输出即可，无需在索引上跳过）。
       var html = '';
       rows.forEach(function (row) {
-        for (var i = 0; i < columns; i += 1) {
+        for (var i = 0; i < row.length; i += 1) {
           var cell = row[i];
           if (cell === null || cell === undefined || cell === '') {
             html += '<span class="pad-cell" aria-hidden="true"></span>';
