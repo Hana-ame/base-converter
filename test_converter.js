@@ -82,6 +82,22 @@ check('invalid digits produce readable errors', () => {
   assert.strictEqual(C.parse('0xGG', 'DEC').ok, false);
 });
 
+check('detectBase picks a comfortable default', () => {
+  assert.strictEqual(C.detectBase('255', 'DEC'), 'DEC');
+  assert.strictEqual(C.detectBase('1010', 'BIN'), 'BIN');
+  assert.strictEqual(C.detectBase('777', 'OCT'), 'OCT');
+  assert.strictEqual(C.detectBase('FF', 'DEC'), 'HEX');
+  assert.strictEqual(C.detectBase('dead_beef', 'DEC'), 'HEX');
+  assert.strictEqual(C.detectBase('FF', 'BIN'), 'HEX');
+  assert.strictEqual(C.detectBase('-ABCD', 'DEC'), 'HEX');
+  assert.strictEqual(C.detectBase('0xFF', 'DEC'), 'HEX');
+  assert.strictEqual(C.detectBase('0b1010', 'DEC'), 'BIN');
+  assert.strictEqual(C.detectBase('0o777', 'DEC'), 'OCT');
+  assert.strictEqual(C.detectBase('G', 'DEC'), 'DEC');
+  assert.strictEqual(C.detectBase('777', 'BIN'), 'BIN');
+  assert.strictEqual(C.detectBase('', 'DEC'), 'DEC');
+});
+
 check('format each base with prefix and grouping', () => {
   assert.strictEqual(C.format(255n, 'HEX'), '0xFF');
   assert.strictEqual(C.format(65535n, 'HEX'), '0xFFFF');

@@ -188,6 +188,34 @@
   }
 
   /**
+   * Pick the most likely base for what the user is typing.
+   *
+   * Explicit 0x / 0b / 0o prefixes always win. Otherwise the selected base is
+   * kept when it can parse the digits; if it cannot and the input contains
+   * hex letters (A-F), HEX is chosen so pasting `DEADBEEF` just works.
+   *
+   * @param {string} input
+   * @param {string} selectedBase
+   * @returns {string} HEX / BIN / OCT / DEC
+   */
+  function detectBase(input, selectedBase) {
+    var selected = BASES[selectedBase] ? selectedBase : 'DEC';
+    var text = clean(input);
+    if (!text) return selected;
+
+    var prefixed = prefixBaseOf(text);
+    if (prefixed) return prefixed;
+
+    var body = text;
+    if (body.charAt(0) === '+' || body.charAt(0) === '-') body = body.slice(1);
+    if (!body) return selected;
+
+    if (BASES[selected].pattern.test(body)) return selected;
+    if (BASES.HEX.pattern.test(body) && /[a-f]/i.test(body)) return 'HEX';
+    return selected;
+  }
+
+  /**
    * Format a BigInt (or integer-valued string/number) in a given base.
    *
    * @param {bigint|string|number} value
@@ -247,6 +275,7 @@
     prefixBaseOf: prefixBaseOf,
     stripPrefix: stripPrefix,
     parse: parse,
+    detectBase: detectBase,
     format: format,
     bitLength: bitLength,
     convert: convert
