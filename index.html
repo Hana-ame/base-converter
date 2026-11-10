@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>进制转换器 · HEX / BIN / OCT / DEC</title>
+<meta name="description" content="简易进制转换器：十六进制、二进制、八进制、十进制实时互转，支持每 4 位插入下划线分隔（如 1111_1111），纯前端、大整数精确计算。">
+<meta name="theme-color" content="#070c10">
+<meta property="og:title" content="进制转换器 · HEX / BIN / OCT / DEC">
+<meta property="og:description" content="四种进制实时互转，支持每 4 位 _ 分组，纯前端、任意精度。">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b1218'/%3E%3Ctext x='32' y='43' font-family='monospace' font-size='26' font-weight='700' fill='%2357e3b4' text-anchor='middle'%3E01%3C/text%3E%3C/svg%3E">
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #070c10;
+    --panel: #0e171e;
+    --panel-deep: #070e13;
+    --line: rgba(159, 201, 216, .13);
+    --line-strong: rgba(159, 201, 216, .26);
+    --text: #e7f2f4;
+    --muted: #8199a5;
+    --faint: #6b828e;
+    --mint: #57e3b4;
+    --blue: #6db6ff;
+    --amber: #ffc45e;
+    --pink: #ff8fc7;
+    --red: #ff7b8a;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", "Cascadia Mono", Consolas, "Liberation Mono", Menlo, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    min-height: 100vh;
+    background:
+      radial-gradient(1100px 620px at 12% -12%, rgba(87, 227, 180, .13), transparent 62%),
+      radial-gradient(900px 560px at 96% -4%, rgba(109, 182, 255, .11), transparent 58%),
+      radial-gradient(800px 700px at 50% 120%, rgba(255, 143, 199, .05), transparent 60%),
+      var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      linear-gradient(rgba(255, 255, 255, .022) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, .022) 1px, transparent 1px);
+    background-size: 52px 52px;
+    -webkit-mask-image: radial-gradient(ellipse at 50% 0%, #000 0%, transparent 76%);
+    mask-image: radial-gradient(ellipse at 50% 0%, #000 0%, transparent 76%);
+  }
+
+  ::selection { background: rgba(87, 227, 180, .28); color: #fff; }
+
+  .shell {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 880px;
+    margin: 0 auto;
+    padding: clamp(28px, 5.5vw, 64px) 20px 30px;
+  }
+
+  .hero { animation: rise .5s ease both; }
+
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    padding: 6px 12px 6px 10px;
+    border: 1px solid rgba(87, 227, 180, .25);
+    border-radius: 999px;
+    background: rgba(87, 227, 180, .06);
+    color: var(--mint);
+    font-family: var(--mono);
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+  }
+
+  .eyebrow .pulse {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--mint);
+    box-shadow: 0 0 0 4px rgba(87, 227, 180, .12), 0 0 12px rgba(87, 227, 180, .8);
+  }
+
+  h1 {
+    margin: 18px 0 10px;
+    font-size: clamp(34px, 6.4vw, 54px);
+    font-weight: 700;
+    line-height: 1.04;
+    letter-spacing: -.035em;
+  }
+
+  h1 em {
+    font-style: normal;
+    background: linear-gradient(100deg, #eafff8 0%, #9cf3d7 42%, #8ccaff 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .subtitle {
+    color: var(--muted);
+    font-size: clamp(13px, 2vw, 14.5px);
+    line-height: 1.65;
+    letter-spacing: .01em;
+  }
+
+  .subtitle .mono {
+    margin-right: 8px;
+    color: #b6c8cf;
+    font-family: var(--mono);
+    font-size: .92em;
+    letter-spacing: .08em;
+  }
+
+  .subtitle .sep {
+    display: inline-block;
+    margin: 0 7px;
+    color: #3d525d;
+  }
+
+  .converter {
+    margin-top: clamp(24px, 4vw, 34px);
+    padding: clamp(16px, 3.4vw, 28px);
+    border: 1px solid var(--line);
+    border-radius: 22px;
+    background:
+      linear-gradient(180deg, rgba(20, 32, 41, .93), rgba(10, 17, 23, .94));
+    box-shadow:
+      0 40px 100px -42px rgba(0, 0, 0, .95),
+      inset 0 1px 0 rgba(255, 255, 255, .045);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    animation: rise .58s .05s ease both;
+  }
+
+  .tabs {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+    padding: 4px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--panel-deep);
+  }
+
+  .tab {
+    appearance: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 9px 6px 8px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: .1em;
+    cursor: pointer;
+    transition: color .16s ease, background .16s ease, box-shadow .16s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .tab small {
+    color: var(--faint);
+    font-family: var(--sans);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: .04em;
+    transition: color .16s ease;
+  }
+
+  .tab:hover { color: var(--text); background: rgba(255, 255, 255, .035); }
+  .tab:focus-visible { outline: 2px solid rgba(87, 227, 180, .65); outline-offset: 2px; }
+
+  .tab[aria-pressed="true"] {
+    background: linear-gradient(135deg, rgba(87, 227, 180, .17), rgba(109, 182, 255, .1));
+    color: var(--text);
+    box-shadow:
+      inset 0 0 0 1px rgba(87, 227, 180, .34),
+      0 6px 18px -8px rgba(0, 0, 0, .55);
+  }
+
+  .tab[aria-pressed="true"] small { color: #8be9cb; }
+
+  .input-shell {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 14px;
+    padding: 4px 8px 4px 18px;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: var(--panel-deep);
+    transition: border-color .16s ease, box-shadow .16s ease;
+  }
+
+  .input-shell:focus-within {
+    border-color: rgba(87, 227, 180, .55);
+    box-shadow:
+      0 0 0 3px rgba(87, 227, 180, .09),
+      0 18px 40px -24px rgba(87, 227, 180, .45);
+  }
+
+  .input-shell.invalid {
+    border-color: rgba(255, 123, 138, .6);
+    box-shadow: 0 0 0 3px rgba(255, 123, 138, .08);
+  }
+
+  .input-shell input {
+    flex: 1 1 auto;
+    width: 100%;
+    min-width: 0;
+    height: 58px;
+    padding: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: clamp(20px, 4.3vw, 30px);
+    font-weight: 600;
+    letter-spacing: .035em;
+    caret-color: var(--mint);
+  }
+
+  .input-shell input::placeholder {
+    color: #5a727e;
+    font-weight: 500;
+    letter-spacing: .04em;
+  }
+
+  .clear {
+    flex: none;
+    width: 38px;
+    height: 38px;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--faint);
+    font-family: var(--sans);
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    transition: color .16s ease, background .16s ease, border-color .16s ease;
+  }
+
+  .clear:hover {
+    color: var(--text);
+    background: rgba(255, 255, 255, .05);
+    border-color: var(--line);
+  }
+
+  .clear:focus-visible { outline: 2px solid rgba(87, 227, 180, .65); outline-offset: 1px; }
+
+  .assist {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    min-height: 19px;
+    margin: 9px 3px 0;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.5;
+    letter-spacing: .01em;
+    transition: color .16s ease;
+  }
+
+  .assist::before {
+    content: "";
+    flex: none;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--faint);
+    transition: background .16s ease, box-shadow .16s ease;
+  }
+
+  .assist.error { color: #ffabb5; }
+  .assist.error::before { background: var(--red); box-shadow: 0 0 8px rgba(255, 123, 138, .6); }
+  .assist.ok::before { background: var(--mint); }
+
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    flex-wrap: wrap;
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid var(--line);
+  }
+
+  .toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    color: var(--muted);
+    font-size: 12.5px;
+    line-height: 1;
+    cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .toggle input {
+    position: absolute;
+    width: 0;
+    height: 0;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .track {
+    position: relative;
+    flex: none;
+    width: 34px;
+    height: 20px;
+    border: 1px solid #2b3c46;
+    border-radius: 999px;
+    background: #17232b;
+    transition: background .16s ease, border-color .16s ease;
+  }
+
+  .track::after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #708690;
+    transition: transform .16s ease, background .16s ease, box-shadow .16s ease;
+  }
+
+  .toggle input:checked + .track {
+    border-color: rgba(87, 227, 180, .46);
+    background: rgba(87, 227, 180, .18);
+  }
+
+  .toggle input:checked + .track::after {
+    transform: translateX(14px);
+    background: var(--mint);
+    box-shadow: 0 0 10px rgba(87, 227, 180, .55);
+  }
+
+  .toggle input:focus-visible + .track {
+    outline: 2px solid rgba(87, 227, 180, .65);
+    outline-offset: 2px;
+  }
+
+  .toggle code {
+    color: #b8cbd2;
+    font-family: var(--mono);
+    font-size: 1.04em;
+  }
+
+  .bit-info {
+    margin-left: auto;
+    color: var(--faint);
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .04em;
+    white-space: nowrap;
+  }
+
+  .bit-info b { color: #a9bdc6; font-weight: 600; }
+
+  .results {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 18px;
+  }
+
+  .result-row {
+    position: relative;
+    display: grid;
+    grid-template-columns: 112px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 14px;
+    padding: 11px 11px 11px 17px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: rgba(7, 14, 19, .55);
+    overflow: hidden;
+    transition: border-color .16s ease, background .16s ease;
+  }
+
+  .result-row::before {
+    content: "";
+    position: absolute;
+    top: 11px;
+    bottom: 11px;
+    left: 0;
+    width: 2px;
+    border-radius: 2px;
+    background: var(--base);
+    opacity: .62;
+  }
+
+  .result-row:hover {
+    border-color: var(--line-strong);
+    background: rgba(11, 20, 27, .82);
+  }
+
+  .result-key {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+    padding-left: 5px;
+  }
+
+  .result-key code {
+    color: var(--base);
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: .1em;
+  }
+
+  .result-key span {
+    color: var(--faint);
+    font-size: 10px;
+    letter-spacing: .03em;
+  }
+
+  .result-value {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    min-height: 27px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    color: #dce9ed;
+    font-family: var(--mono);
+    font-size: clamp(15px, 2.7vw, 19px);
+    letter-spacing: .02em;
+    white-space: nowrap;
+    scrollbar-width: thin;
+    scrollbar-color: #2a3a44 transparent;
+  }
+
+  .result-value::-webkit-scrollbar { height: 5px; }
+  .result-value::-webkit-scrollbar-thumb { background: #2a3a44; border-radius: 9px; }
+  .result-value.empty { color: #415660; }
+
+  .copy {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex: none;
+    padding: 7px 11px;
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    background: rgba(255, 255, 255, .02);
+    color: var(--muted);
+    font-family: var(--sans);
+    font-size: 11.5px;
+    cursor: pointer;
+    transition: color .16s ease, background .16s ease, border-color .16s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .copy:hover:not(:disabled) {
+    border-color: var(--line-strong);
+    background: rgba(255, 255, 255, .05);
+    color: var(--text);
+  }
+
+  .copy:focus-visible { outline: 2px solid rgba(87, 227, 180, .65); outline-offset: 2px; }
+  .copy:disabled { opacity: .32; cursor: default; }
+  .copy.copied {
+    border-color: rgba(87, 227, 180, .46);
+    background: rgba(87, 227, 180, .09);
+    color: var(--mint);
+  }
+
+  .copy svg { width: 12px; height: 12px; flex: none; }
+
+  .foot-note {
+    margin-top: 16px;
+    color: #647c88;
+    font-size: 11px;
+    line-height: 1.6;
+    text-align: center;
+    letter-spacing: .01em;
+  }
+
+  .foot-note code {
+    color: #7d939e;
+    font-family: var(--mono);
+    font-size: 1em;
+  }
+
+  .page-foot {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 9px;
+    flex-wrap: wrap;
+    margin-top: 20px;
+    color: #5d7580;
+    font-size: 11.5px;
+  }
+
+  .page-foot .dot { color: #2f424b; }
+  .page-foot a {
+    color: #6d838e;
+    text-decoration: none;
+    border-bottom: 1px dotted rgba(109, 131, 142, .55);
+    transition: color .16s ease, border-color .16s ease;
+  }
+  .page-foot a:hover { color: var(--mint); border-color: rgba(87, 227, 180, .6); }
+
+  .toast {
+    position: fixed;
+    z-index: 30;
+    left: 50%;
+    bottom: 28px;
+    transform: translate(-50%, 14px);
+    padding: 10px 18px;
+    border: 1px solid rgba(87, 227, 180, .32);
+    border-radius: 999px;
+    background: rgba(13, 25, 32, .96);
+    box-shadow: 0 16px 40px -16px rgba(0, 0, 0, .9);
+    color: #d8ebe8;
+    font-size: 12.5px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .18s ease, transform .18s ease;
+  }
+
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (max-width: 640px) {
+    .shell { padding: 24px 13px 24px; }
+    .converter { border-radius: 18px; }
+    .tab { padding: 8px 2px 7px; font-size: 12px; }
+    .tab small { font-size: 9px; }
+    .input-shell { padding-left: 14px; }
+    .input-shell input { height: 52px; font-size: 21px; }
+    .controls { gap: 13px; }
+    .bit-info { width: 100%; margin-left: 0; padding-top: 2px; }
+    .result-row { grid-template-columns: 66px minmax(0, 1fr) auto; gap: 8px; padding: 10px 8px 10px 13px; }
+    .result-value { font-size: 15px; min-height: 25px; }
+    .copy { padding: 7px 9px; }
+    .foot-note { padding: 0 8px; }
+  }
+
+  @media (max-width: 380px) {
+    .copy-label { display: none; }
+    .copy { padding: 7px 8px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .001ms !important; animation-delay: 0ms !important; transition-duration: .001ms !important; }
+  }
+</style>
+</head>
+<body>
+  <div class="shell">
+    <header class="hero">
+      <div class="eyebrow"><span class="pulse"></span>Base Converter</div>
+      <h1>进制<em>转换器</em></h1>
+      <p class="subtitle">
+        <span class="mono">HEX · BIN · OCT · DEC</span><span class="sep">/</span>任意精度整数实时互转<span class="sep">·</span>每 4 位自动插入下划线
+      </p>
+    </header>
+
+    <main class="converter" aria-label="进制转换器">
+      <div class="tabs" role="group" aria-label="选择输入进制">
+        <button type="button" class="tab" data-base="HEX" aria-pressed="false">HEX<small>十六进制</small></button>
+        <button type="button" class="tab" data-base="BIN" aria-pressed="false">BIN<small>二进制</small></button>
+        <button type="button" class="tab" data-base="OCT" aria-pressed="false">OCT<small>八进制</small></button>
+        <button type="button" class="tab" data-base="DEC" aria-pressed="false">DEC<small>十进制</small></button>
+      </div>
+
+      <div class="input-shell" id="inputShell">
+        <input id="valueInput" type="text" maxlength="512" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="输入十进制数字" placeholder="42_9496_7295">
+        <button type="button" class="clear" id="clearBtn" aria-label="清空输入" title="清空（Esc）">×</button>
+      </div>
+
+      <p class="assist" id="assist" role="status" aria-live="polite">输入十进制数字</p>
+
+      <div class="controls">
+        <label class="toggle">
+          <input type="checkbox" id="groupToggle" checked>
+          <span class="track" aria-hidden="true"></span>
+          <span>每 4 位加 <code>_</code></span>
+        </label>
+        <label class="toggle">
+          <input type="checkbox" id="prefixToggle" checked>
+          <span class="track" aria-hidden="true"></span>
+          <span>带 <code>0x</code> / <code>0b</code> / <code>0o</code> 前缀</span>
+        </label>
+        <span class="bit-info" id="bitInfo">等待输入</span>
+      </div>
+
+      <section class="results" aria-label="转换结果">
+        <div class="result-row" style="--base: var(--blue)">
+          <div class="result-key"><code>HEX</code><span>十六进制</span></div>
+          <div class="result-value empty" id="out-HEX">—</div>
+          <button type="button" class="copy" data-copy="HEX" disabled aria-label="复制十六进制结果">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+            <span class="copy-label">复制</span>
+          </button>
+        </div>
+
+        <div class="result-row" style="--base: var(--mint)">
+          <div class="result-key"><code>BIN</code><span>二进制</span></div>
+          <div class="result-value empty" id="out-BIN">—</div>
+          <button type="button" class="copy" data-copy="BIN" disabled aria-label="复制二进制结果">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+            <span class="copy-label">复制</span>
+          </button>
+        </div>
+
+        <div class="result-row" style="--base: var(--amber)">
+          <div class="result-key"><code>OCT</code><span>八进制</span></div>
+          <div class="result-value empty" id="out-OCT">—</div>
+          <button type="button" class="copy" data-copy="OCT" disabled aria-label="复制八进制结果">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+            <span class="copy-label">复制</span>
+          </button>
+        </div>
+
+        <div class="result-row" style="--base: var(--pink)">
+          <div class="result-key"><code>DEC</code><span>十进制</span></div>
+          <div class="result-value empty" id="out-DEC">—</div>
+          <button type="button" class="copy" data-copy="DEC" disabled aria-label="复制十进制结果">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+            <span class="copy-label">复制</span>
+          </button>
+        </div>
+      </section>
+
+      <p class="foot-note">支持 <code>0x</code> / <code>0b</code> / <code>0o</code> 前缀与下划线输入 · 所有计算都在浏览器本地完成</p>
+    </main>
+
+    <footer class="page-foot">
+      <span>纯前端 · 数据不离开浏览器</span>
+      <span class="dot">·</span>
+      <a href="https://github.com/Hana-ame/base-converter" target="_blank" rel="noopener">GitHub</a>
+    </footer>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="converter.js"></script>
+  <script>
+  (function () {
+    'use strict';
+
+    var Core = window.BaseConverter;
+    if (!Core) return;
+
+    var ORDER = Core.BASE_ORDER;
+    var STORAGE_KEY = 'base-converter:settings:v1';
+    var PLACEHOLDERS = {
+      HEX: 'FF_FF_FF_FF',
+      BIN: '1010_1010',
+      OCT: '7_7777_7777',
+      DEC: '42_9496_7295'
+    };
+    var HINTS = {
+      HEX: '十六进制：0-9、A-F；可输入 0x 前缀',
+      BIN: '二进制：0、1；可输入 0b 前缀',
+      OCT: '八进制：0-7；可输入 0o 前缀',
+      DEC: '十进制：0-9；可输入 0x / 0b / 0o 自动识别'
+    };
+
+    var state = {
+      base: 'DEC',
+      group: true,
+      prefix: true
+    };
+
+    var input = document.getElementById('valueInput');
+    var inputShell = document.getElementById('inputShell');
+    var assist = document.getElementById('assist');
+    var clearBtn = document.getElementById('clearBtn');
+    var groupToggle = document.getElementById('groupToggle');
+    var prefixToggle = document.getElementById('prefixToggle');
+    var bitInfo = document.getElementById('bitInfo');
+    var toast = document.getElementById('toast');
+    var tabs = Array.prototype.slice.call(document.querySelectorAll('.tab'));
+    var copyButtons = Array.prototype.slice.call(document.querySelectorAll('.copy'));
+    var outputs = {};
+
+    ORDER.forEach(function (base) {
+      outputs[base] = document.getElementById('out-' + base);
+    });
+
+    function loadSettings() {
+      try {
+        var saved = JSON.parse(window.localStorage.getItem(STORAGE_KEY) || 'null');
+        if (!saved) return;
+        if (Core.BASES[saved.base]) state.base = saved.base;
+        if (typeof saved.group === 'boolean') state.group = saved.group;
+        if (typeof saved.prefix === 'boolean') state.prefix = saved.prefix;
+      } catch (err) { /* storage unavailable, keep defaults */ }
+    }
+
+    function saveSettings() {
+      try {
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } catch (err) { /* ignore quota / privacy mode */ }
+    }
+
+    var toastTimer = null;
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add('show');
+      window.clearTimeout(toastTimer);
+      toastTimer = window.setTimeout(function () {
+        toast.classList.remove('show');
+      }, 1600);
+    }
+
+    function updateTabs() {
+      tabs.forEach(function (tab) {
+        tab.setAttribute('aria-pressed', tab.dataset.base === state.base ? 'true' : 'false');
+      });
+    }
+
+    function setAssist(text, kind) {
+      assist.textContent = text;
+      assist.classList.toggle('error', kind === 'error');
+      assist.classList.toggle('ok', kind === 'ok');
+    }
+
+    function render(parsed) {
+      updateTabs();
+      input.placeholder = PLACEHOLDERS[state.base];
+      input.setAttribute('aria-label', '输入' + Core.BASES[state.base].label + '数字');
+      inputShell.classList.toggle('invalid', Boolean(parsed.error));
+
+      if (parsed.error) {
+        setAssist(parsed.error, 'error');
+      } else if (parsed.empty) {
+        setAssist(HINTS[state.base], '');
+      } else if (parsed.incomplete) {
+        setAssist('继续输入…', '');
+      } else {
+        setAssist(HINTS[state.base], 'ok');
+      }
+
+      ORDER.forEach(function (base) {
+        var node = outputs[base];
+        var button = document.querySelector('.copy[data-copy="' + base + '"]');
+        if (parsed.ok) {
+          node.textContent = Core.format(parsed.value, base, {
+            group: state.group,
+            prefix: state.prefix
+          });
+          node.classList.remove('empty');
+          button.disabled = false;
+        } else {
+          node.textContent = '—';
+          node.classList.add('empty');
+          button.disabled = true;
+        }
+      });
+
+      if (parsed.ok) {
+        var bits = Core.bitLength(parsed.value);
+        bitInfo.innerHTML = '<b>' + bits + '</b> 位 · <b>' + Math.ceil(bits / 8) + '</b> 字节';
+      } else if (parsed.empty || parsed.incomplete) {
+        bitInfo.textContent = '等待输入';
+      } else {
+        bitInfo.textContent = '输入有误';
+      }
+    }
+
+    function update(options) {
+      var opts = options || {};
+      var parsed = Core.parse(input.value, state.base);
+
+      if (opts.detect !== false && parsed.hasPrefix && parsed.base !== state.base) {
+        state.base = parsed.base;
+        saveSettings();
+      }
+
+      render(parsed);
+    }
+
+    function copyText(text) {
+      var fallback = function () {
+        var area = document.createElement('textarea');
+        area.value = text;
+        area.setAttribute('readonly', '');
+        area.style.position = 'fixed';
+        area.style.top = '-9999px';
+        area.style.opacity = '0';
+        document.body.appendChild(area);
+        area.select();
+        try {
+          var ok = document.execCommand('copy');
+          document.body.removeChild(area);
+          if (!ok) throw new Error('copy command failed');
+        } catch (err) {
+          document.body.removeChild(area);
+          throw err;
+        }
+      };
+
+      if (navigator.clipboard && window.isSecureContext) {
+        return navigator.clipboard.writeText(text).catch(fallback);
+      }
+      return Promise.resolve().then(fallback);
+    }
+
+    tabs.forEach(function (tab) {
+      tab.addEventListener('click', function () {
+        var next = tab.dataset.base;
+        if (next === state.base) {
+          input.focus();
+          return;
+        }
+
+        var parsed = Core.parse(input.value, state.base);
+        if (parsed.ok) {
+          // Switching tabs keeps the numeric value and rewrites the input in
+          // the newly selected base (plain digits, no separators / prefix).
+          input.value = Core.format(parsed.value, next, { group: false, prefix: false });
+        } else if (parsed.hasPrefix) {
+          input.value = Core.stripPrefix(input.value);
+        }
+
+        state.base = next;
+        saveSettings();
+        update({ detect: false });
+        input.focus();
+      });
+    });
+
+    input.addEventListener('input', function () {
+      update({ detect: true });
+    });
+
+    input.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape' && input.value) {
+        event.preventDefault();
+        input.value = '';
+        update({ detect: false });
+      }
+    });
+
+    clearBtn.addEventListener('click', function () {
+      input.value = '';
+      update({ detect: false });
+      input.focus();
+    });
+
+    groupToggle.addEventListener('change', function () {
+      state.group = groupToggle.checked;
+      saveSettings();
+      update({ detect: false });
+    });
+
+    prefixToggle.addEventListener('change', function () {
+      state.prefix = prefixToggle.checked;
+      saveSettings();
+      update({ detect: false });
+    });
+
+    copyButtons.forEach(function (button) {
+      button.addEventListener('click', function () {
+        var base = button.dataset.copy;
+        var parsed = Core.parse(input.value, state.base);
+        if (!parsed.ok) return;
+
+        var text = Core.format(parsed.value, base, {
+          group: state.group,
+          prefix: state.prefix
+        });
+
+        copyText(text).then(function () {
+          var label = button.querySelector('.copy-label');
+          var previous = label.textContent;
+          label.textContent = '已复制';
+          button.classList.add('copied');
+          showToast(Core.BASES[base].label + '结果已复制');
+
+          window.clearTimeout(button._copiedTimer);
+          button._copiedTimer = window.setTimeout(function () {
+            label.textContent = previous;
+            button.classList.remove('copied');
+          }, 1200);
+        }).catch(function () {
+          showToast('复制失败，请手动选择文本');
+        });
+      });
+    });
+
+    loadSettings();
+    groupToggle.checked = state.group;
+    prefixToggle.checked = state.prefix;
+    update({ detect: false });
+  })();
+  </script>
+</body>
+</html>
