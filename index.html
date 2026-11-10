@@ -537,12 +537,19 @@
   }
 
   .pad {
-    display: grid;
-    grid-template-columns: repeat(var(--pad-columns, 5), 58px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     gap: 6px;
     width: fit-content;
     margin: 0 auto;
     touch-action: manipulation;
+  }
+
+  .pad-row {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
   }
 
   .pad button {
@@ -589,7 +596,8 @@
   .pad button.fn.danger { color: var(--pink); }
 
   @media (max-width: 640px) {
-    .pad { grid-template-columns: repeat(var(--pad-columns, 5), 44px); gap: 5px; }
+    .pad { gap: 5px; }
+    .pad-row { gap: 5px; }
     .pad button { min-height: 44px; font-size: 15px; }
     .pad button.fn { font-size: 11px; }
   }
@@ -851,25 +859,35 @@
       assist.classList.toggle('ok', kind === 'ok');
     }
 
+    function padButton(cell) {
+      // 'CLEAR' / 'BACK' are action markers (labels render as C / ⌫); a real
+      // digit 'C' (hex) is treated as a key, never as the clear action.
+      var isClear = cell === 'CLEAR';
+      var isBack = cell === 'BACK';
+      var label = isClear ? 'C' : (isBack ? '⌫' : cell);
+      var cls = isClear ? ' fn danger' : (isBack ? ' fn' : '');
+      var action = isClear ? ' data-action="clear"' : (isBack ? ' data-action="back"' : '');
+      var aria = isClear ? '清空输入' : (isBack ? '退格' : '输入 ' + cell);
+      var keyAttr = isClear || isBack ? '' : ' data-key="' + cell + '"';
+      return '<button type="button" class="' + cls + '"' + keyAttr + action + ' aria-label="' + aria + '">' + label + '</button>';
+    }
+
     function renderPad() {
       if (!pad) return;
-      if (typeof Core.keysFor !== 'function') return;
-      var keys = Core.keysFor(state.base);
-      var columns = (typeof Core.columnsFor === 'function' ? Core.columnsFor(state.base) : 5);
-      pad.style.setProperty('--pad-columns', String(columns));
+      if (typeof Core.rowsFor !== 'function' && typeof Core.keysFor !== 'function') return;
 
-      // Digit keys flow row by row; C and ⌫ fill the remaining cells of the
-      // last row (or get their own row when keys are a full multiple).
-      var cells = keys.concat(['C', '⌫']);
+      var rows = (typeof Core.rowsFor === 'function')
+        ? Core.rowsFor(state.base)
+        : [Core.keysFor(state.base).concat(['CLEAR', 'BACK'])];
+
       var html = '';
-      for (var i = 0; i < cells.length; i += 1) {
-        var cell = cells[i];
-        var cls = cell === 'C' ? ' fn danger' : (cell === '⌫' ? ' fn' : '');
-        var action = cell === 'C' ? ' data-action="clear"' : (cell === '⌫' ? ' data-action="back"' : '');
-        var aria = cell === 'C' ? '清空输入' : (cell === '⌫' ? '退格' : '输入 ' + cell);
-        var keyAttr = cell === 'C' || cell === '⌫' ? '' : ' data-key="' + cell + '"';
-        html += '<button type="button" class="' + cls + '"' + keyAttr + action + ' aria-label="' + aria + '">' + cell + '</button>';
-      }
+      rows.forEach(function (row) {
+        html += '<div class="pad-row">';
+        row.forEach(function (cell) {
+          html += padButton(cell);
+        });
+        html += '</div>';
+      });
       pad.innerHTML = html;
       if (padHint) padHint.textContent = Core.BASES[state.base].label + ' · 鼠标点击输入';
     }

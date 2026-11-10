@@ -27,7 +27,16 @@
       pattern: /^[0-9a-fA-F]+$/,
       charPattern: /^[0-9a-fA-F]$/,
       keys: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'],
-      columns: 6
+      columns: 6,
+      // 动作键用 'CLEAR' / 'BACK' 标记，避免与十六进制数字 C 冲突。
+      // A-F 单独占一行（用户要求：ABCDEF 另起一行）。
+      rows: [
+        ['7', '8', '9'],
+        ['4', '5', '6'],
+        ['1', '2', '3'],
+        ['0', 'CLEAR', 'BACK'],
+        ['A', 'B', 'C', 'D', 'E', 'F']
+      ]
     },
     BIN: {
       name: 'BIN',
@@ -39,7 +48,8 @@
       pattern: /^[01]+$/,
       charPattern: /^[01]$/,
       keys: ['0', '1'],
-      columns: 4
+      columns: 4,
+      rows: [['0', '1'], ['CLEAR', 'BACK']]
     },
     OCT: {
       name: 'OCT',
@@ -51,7 +61,8 @@
       pattern: /^[0-7]+$/,
       charPattern: /^[0-7]$/,
       keys: ['0', '1', '2', '3', '4', '5', '6', '7'],
-      columns: 5
+      columns: 5,
+      rows: [['0', '1', '2', '3'], ['4', '5', '6', '7'], ['CLEAR', 'BACK']]
     },
     DEC: {
       name: 'DEC',
@@ -63,7 +74,8 @@
       pattern: /^[0-9]+$/,
       charPattern: /^[0-9]$/,
       keys: ['7', '8', '9', '4', '5', '6', '1', '2', '3', '0'],
-      columns: 3
+      columns: 3,
+      rows: [['7', '8', '9'], ['4', '5', '6'], ['1', '2', '3'], ['0', 'CLEAR', 'BACK']]
     }
   };
 
@@ -287,6 +299,19 @@
     return def.columns || 5;
   }
 
+  /**
+   * Explicit row layout for the pad. Each entry is one row (array of key
+   * labels; 'C' and '⌫' are the clear / backspace actions). Falls back to a
+   * single row of the flat keys when no rows are defined.
+   */
+  function rowsFor(base) {
+    var def = BASES[base] ? BASES[base] : BASES.DEC;
+    if (def.rows && def.rows.length) {
+      return def.rows.map(function (row) { return row.slice(); });
+    }
+    return [def.keys.slice()];
+  }
+
   return {
     BASE_ORDER: BASE_ORDER,
     BASES: BASES,
@@ -300,6 +325,7 @@
     bitLength: bitLength,
     convert: convert,
     keysFor: keysFor,
-    columnsFor: columnsFor
+    columnsFor: columnsFor,
+    rowsFor: rowsFor
   };
 });

@@ -186,4 +186,20 @@ check('columnsFor returns a fixed grid column count per base', () => {
   assert.strictEqual(C.columnsFor('BOGUS'), 3, 'unknown base falls back to DEC columns');
 });
 
+check('rowsFor returns explicit row layout per base', () => {
+  assert.deepStrictEqual(C.rowsFor('DEC'), [['7','8','9'],['4','5','6'],['1','2','3'],['0','CLEAR','BACK']]);
+  assert.deepStrictEqual(C.rowsFor('BIN'), [['0','1'],['CLEAR','BACK']]);
+  assert.deepStrictEqual(C.rowsFor('OCT'), [['0','1','2','3'],['4','5','6','7'],['CLEAR','BACK']]);
+  const hexRows = C.rowsFor('HEX');
+  assert.strictEqual(hexRows.length, 5);
+  assert.deepStrictEqual(hexRows[4], ['A','B','C','D','E','F'], 'A-F is its own (last) row');
+  // the C in A-F row is a real digit, not the clear action marker
+  assert.notStrictEqual(hexRows[4].indexOf('C'), -1);
+  // returns fresh copies
+  assert.notStrictEqual(C.rowsFor('HEX'), C.rowsFor('HEX'));
+  assert.notStrictEqual(C.rowsFor('HEX')[0], C.rowsFor('HEX')[0]);
+  // unknown base falls back to DEC
+  assert.deepStrictEqual(C.rowsFor('BOGUS'), C.rowsFor('DEC'));
+});
+
 console.log('\nAll ' + passed + ' test groups passed.');
