@@ -1,5 +1,5 @@
 /* Service Worker for 进制转换器 (PWA installable) */
-const CACHE_NAME = 'base-converter-v1';
+const CACHE_NAME = 'base-converter-v3';
 const ASSETS = [
   './',
   './index.html',
@@ -24,6 +24,9 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
+// Network-first for HTML/JS: fixes deploy immediately; cache is only a fallback
+// (offline). This guarantees phones pick up new versions without waiting for
+// the old cache-first SW to serve stale pages forever.
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
   // Only handle same-origin GET requests.
@@ -31,24 +34,23 @@ self.addEventListener('fetch', (event) => {
     return;
   }
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) return cached;
-      return fetch(event.request)
-        .then((response) => {
-          // Cache successful same-origin responses (assets + HTML).
-          if (response && response.ok) {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone)).catch(() => {});
-          }
-          return response;
-        })
-        .catch(() => {
+    fetch(event.request)
+      .then((response) => {
+        if (response && response.ok) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone)).catch(() => {});
+        }
+        return response;
+      })
+      .catch(() =>
+        caches.match(event.request).then((cached) => {
+          if (cached) return cached;
           // Fallback to cached index.html for navigation (SPA-like).
           if (event.request.mode === 'navigate') {
             return caches.match('./index.html');
           }
           return Response.error();
-        });
-    })
+        })
+      )
   );
 });

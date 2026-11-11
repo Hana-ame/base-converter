@@ -819,12 +819,7 @@
     var copyButtons = Array.prototype.slice.call(document.querySelectorAll('.copy'));
     var outputs = {};
 
-    // 触屏（手机/平板）判定：点按数字键盘时不聚焦输入框，避免唤醒系统输入法键盘。
-    // 优先用 pointer: coarse（主输入为触摸，正是手机/平板）；仅当浏览器不支持
-    // matchMedia 时才退回 ontouchstart / maxTouchPoints，避免误伤带鼠标的触屏笔记本。
-    var isTouch = (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) ||
-      (!window.matchMedia && ('ontouchstart' in window || navigator.maxTouchPoints > 0));
-    // 输入框未聚焦时数字键盘使用的插入位置（聚焦期间始终同步真实光标）。
+    // 数字键盘/全局键盘在输入框未聚焦时使用的插入位置（聚焦期间始终同步真实光标）。
     var padCaret = null;
 
     ORDER.forEach(function (base) {
@@ -1009,10 +1004,7 @@
     tabs.forEach(function (tab) {
       tab.addEventListener('click', function () {
         var next = tab.dataset.base;
-        if (next === state.base) {
-          input.focus();
-          return;
-        }
+        if (next === state.base) return;
 
         var parsed = Core.parse(input.value, state.base);
         if (parsed.ok) {
@@ -1026,7 +1018,7 @@
         state.base = next;
         saveSettings();
         update({ detect: false });
-        input.focus();
+        // 切换进制不聚焦输入框：手机上点标签弹软键盘很突兀；桌面端全局键盘监听兜底。
       });
     });
 
@@ -1152,8 +1144,7 @@
         // 字母统一转大写，与数字键盘（A-F）及 HEX 输出约定一致。
         insertAtCursor(/[a-f]/.test(key) ? key.toUpperCase() : key);
         update({ detect: true });
-        // 桌面端把焦点移入输入框，后续敲键走原生输入；触屏不聚焦（避免弹键盘）。
-        if (!isTouch) input.focus({ preventScroll: true });
+        // 不聚焦输入框：任何设备上都不因敲键而唤出软键盘；后续敲键仍由本监听路由。
       } else if (key === 'Backspace') {
         event.preventDefault();
         backspaceAtCaret();
@@ -1168,9 +1159,9 @@
     }, true);
 
     clearBtn.addEventListener('click', function () {
-      input.value = '';
+      clearInput();
       update({ detect: false });
-      input.focus();
+      // 不聚焦输入框：手机上点清空按钮会弹软键盘；桌面端全局键盘监听兜底。
     });
 
     groupToggle.addEventListener('change', function () {
@@ -1219,14 +1210,8 @@
     prefixToggle.checked = state.prefix;
     update({ detect: false });
 
-    // 桌面端打开页面即可直接输入；触屏设备不自动弹键盘。
-    if (window.matchMedia && window.matchMedia('(pointer: fine)').matches) {
-      window.setTimeout(function () {
-        if (document.activeElement === document.body) {
-          input.focus({ preventScroll: true });
-        }
-      }, 180);
-    }
+    // 不再自动聚焦输入框：任何设备打开页面都不弹软键盘。
+    // 桌面端直接敲键即可（全局键盘监听会把 0-9/a-f/A-F 路由进输入框）。
   })();
   </script>
   <script>
