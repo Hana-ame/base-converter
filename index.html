@@ -819,6 +819,14 @@
     var copyButtons = Array.prototype.slice.call(document.querySelectorAll('.copy'));
     var outputs = {};
 
+    // 触屏（手机/平板）判定：点按数字键盘时不聚焦输入框，避免唤醒系统输入法键盘。
+    // 优先用 pointer: coarse（主输入为触摸，正是手机/平板）；仅当浏览器不支持
+    // matchMedia 时才退回 ontouchstart / maxTouchPoints，避免误伤带鼠标的触屏笔记本。
+    var isTouch = (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) ||
+      (!window.matchMedia && ('ontouchstart' in window || navigator.maxTouchPoints > 0));
+    // 输入框未聚焦时数字键盘使用的插入位置（聚焦期间始终同步真实光标）。
+    var padCaret = null;
+
     ORDER.forEach(function (base) {
       outputs[base] = document.getElementById('out-' + base);
     });
@@ -1023,18 +1031,35 @@
     });
 
     input.addEventListener('input', function () {
+      // 输入聚焦期间把真实光标同步到 padCaret，供触屏点按数字键盘（不聚焦）时定位。
+      if (document.activeElement === input) {
+        padCaret = input.selectionStart;
+      }
       update({ detect: true });
     });
 
+    function syncPadCaret() {
+      if (document.activeElement === input) padCaret = input.selectionStart;
+    }
+    input.addEventListener('focus', function () { syncPadCaret(); });
+    input.addEventListener('blur', function () { syncPadCaret(); });
+    input.addEventListener('keyup', syncPadCaret);
+    input.addEventListener('click', syncPadCaret);
+    input.addEventListener('select', syncPadCaret);
+
     function insertAtCursor(text) {
-      var start = input.selectionStart == null ? input.value.length : input.selectionStart;
-      var end = input.selectionEnd == null ? input.value.length : input.selectionEnd;
+      var focused = document.activeElement === input;
+      var start = focused ? input.selectionStart : null;
+      var end = focused ? input.selectionEnd : null;
+      if (start == null) start = (padCaret == null ? input.value.length : padCaret);
+      if (end == null) end = (padCaret == null ? input.value.length : padCaret);
       var next = input.value.slice(0, start) + text + input.value.slice(end);
       if (next.length > 512) return;
       input.value = next;
       var caret = start + text.length;
+      padCaret = caret;
       try {
-        input.setSelectionRange(caret, caret);
+        if (focused) input.setSelectionRange(caret, caret);
       } catch (err) { /* some browsers on some inputs */ }
     }
 
@@ -1044,15 +1069,21 @@
 
       if (button.dataset.action === 'clear') {
         input.value = '';
+        padCaret = 0;
       } else if (button.dataset.action === 'back') {
-        var pos = input.selectionStart == null ? input.value.length : input.selectionStart;
-        var end = input.selectionEnd == null ? pos : input.selectionEnd;
+        var focused = document.activeElement === input;
+        var pos = focused ? input.selectionStart : null;
+        var end = focused ? input.selectionEnd : null;
+        if (pos == null) pos = (padCaret == null ? input.value.length : padCaret);
+        if (end == null) end = (padCaret == null ? input.value.length : padCaret);
         if (pos === end && pos > 0) {
           input.value = input.value.slice(0, pos - 1) + input.value.slice(end);
-          try { input.setSelectionRange(pos - 1, pos - 1); } catch (err) { /* ignore */ }
+          padCaret = pos - 1;
+          try { if (focused) input.setSelectionRange(pos - 1, pos - 1); } catch (err) { /* ignore */ }
         } else {
           input.value = input.value.slice(0, pos) + input.value.slice(end);
-          try { input.setSelectionRange(pos, pos); } catch (err) { /* ignore */ }
+          padCaret = pos;
+          try { if (focused) input.setSelectionRange(pos, pos); } catch (err) { /* ignore */ }
         }
       } else if (button.dataset.key) {
         insertAtCursor(button.dataset.key);
@@ -1061,7 +1092,8 @@
       }
 
       update({ detect: true });
-      input.focus({ preventScroll: true });
+      // 触屏上不聚焦输入框，避免唤出手机输入法键盘；桌面端保持原行为（聚焦以继续键盘输入）。
+      if (!isTouch) input.focus({ preventScroll: true });
     });
 
     // 手机上聚焦输入时把输入框滚到顶部，让下方四行结果落在键盘上方。
