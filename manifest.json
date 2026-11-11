@@ -1,0 +1,32 @@
+{
+  "name": "进制转换器 · HEX / BIN / OCT / DEC",
+  "short_name": "进制转换",
+  "description": "简易进制转换器：十六进制、二进制、八进制、十进制实时互转，支持每 4 位插入下划线分隔（如 1111_1111），纯前端、大整数精确计算。",
+  "start_url": "./",
+  "scope": "./",
+  "id": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#070c10",
+  "theme_color": "#070c10",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

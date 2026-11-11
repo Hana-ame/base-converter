@@ -9,6 +9,8 @@
 <meta property="og:title" content="进制转换器 · HEX / BIN / OCT / DEC">
 <meta property="og:description" content="四种进制实时互转，支持每 4 位 _ 分组，纯前端、任意精度。">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b1218'/%3E%3Ctext x='32' y='43' font-family='monospace' font-size='26' font-weight='700' fill='%2357e3b4' text-anchor='middle'%3E01%3C/text%3E%3C/svg%3E">
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./icon-192.png">
 <style>
   :root {
     color-scheme: dark;
@@ -1142,6 +1144,15 @@
       }, 180);
     }
   })();
+  </script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('./sw.js').catch(function (err) {
+          console.error('SW registration failed:', err);
+        });
+      });
+    }
   </script>
 </body>
 </html>
