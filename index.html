@@ -1063,28 +1063,36 @@
       } catch (err) { /* some browsers on some inputs */ }
     }
 
+    function backspaceAtCaret() {
+      var focused = document.activeElement === input;
+      var pos = focused ? input.selectionStart : null;
+      var end = focused ? input.selectionEnd : null;
+      if (pos == null) pos = (padCaret == null ? input.value.length : padCaret);
+      if (end == null) end = (padCaret == null ? input.value.length : padCaret);
+      if (pos === end && pos > 0) {
+        input.value = input.value.slice(0, pos - 1) + input.value.slice(end);
+        padCaret = pos - 1;
+        try { if (focused) input.setSelectionRange(pos - 1, pos - 1); } catch (err) { /* ignore */ }
+      } else {
+        input.value = input.value.slice(0, pos) + input.value.slice(end);
+        padCaret = pos;
+        try { if (focused) input.setSelectionRange(pos, pos); } catch (err) { /* ignore */ }
+      }
+    }
+
+    function clearInput() {
+      input.value = '';
+      padCaret = 0;
+    }
+
     if (pad) pad.addEventListener('click', function (event) {
       var button = event.target.closest ? event.target.closest('button') : null;
       if (!button || !pad.contains(button)) return;
 
       if (button.dataset.action === 'clear') {
-        input.value = '';
-        padCaret = 0;
+        clearInput();
       } else if (button.dataset.action === 'back') {
-        var focused = document.activeElement === input;
-        var pos = focused ? input.selectionStart : null;
-        var end = focused ? input.selectionEnd : null;
-        if (pos == null) pos = (padCaret == null ? input.value.length : padCaret);
-        if (end == null) end = (padCaret == null ? input.value.length : padCaret);
-        if (pos === end && pos > 0) {
-          input.value = input.value.slice(0, pos - 1) + input.value.slice(end);
-          padCaret = pos - 1;
-          try { if (focused) input.setSelectionRange(pos - 1, pos - 1); } catch (err) { /* ignore */ }
-        } else {
-          input.value = input.value.slice(0, pos) + input.value.slice(end);
-          padCaret = pos;
-          try { if (focused) input.setSelectionRange(pos, pos); } catch (err) { /* ignore */ }
-        }
+        backspaceAtCaret();
       } else if (button.dataset.key) {
         insertAtCursor(button.dataset.key);
       } else {
@@ -1114,6 +1122,48 @@
         update({ detect: false });
       }
     });
+
+    // 全局键盘监测：页面任何位置（输入框未聚焦时）敲 0-9 / a-f / A-F 都直接
+    // 输入到输入框，无需先点输入框。Backspace / Delete / Esc 也全局响应。
+    // 输入框聚焦时走原生输入（activeElement 是 input），此处不重复处理；
+    // 带修饰键（Ctrl/Cmd/Alt）不拦截，保证复制粘贴与浏览器快捷键正常。
+    // 只有会原生吞掉文本的控件（文本输入/文本域/下拉/可编辑）才跳过；
+    // 按钮、复选框等不消费数字，仍由全局路由到转换输入框。
+    function isTextEntry(target) {
+      if (!target) return false;
+      var tag = target.tagName ? target.tagName.toLowerCase() : '';
+      if (tag === 'textarea' || tag === 'select' || target.isContentEditable) return true;
+      if (tag === 'input') {
+        var type = (target.getAttribute('type') || 'text').toLowerCase();
+        return type !== 'checkbox' && type !== 'radio' && type !== 'button' && type !== 'submit';
+      }
+      return false;
+    }
+
+    document.addEventListener('keydown', function (event) {
+      if (event.ctrlKey || event.metaKey || event.altKey) return;
+      if (isTextEntry(document.activeElement)) return; // 文本控件聚焦时交给原生输入
+
+      var key = event.key;
+      if (/^[0-9a-fA-F]$/.test(key)) {
+        event.preventDefault();
+        // 字母统一转大写，与数字键盘（A-F）及 HEX 输出约定一致。
+        insertAtCursor(/[a-f]/.test(key) ? key.toUpperCase() : key);
+        update({ detect: true });
+        // 桌面端把焦点移入输入框，后续敲键走原生输入；触屏不聚焦（避免弹键盘）。
+        if (!isTouch) input.focus({ preventScroll: true });
+      } else if (key === 'Backspace') {
+        event.preventDefault();
+        backspaceAtCaret();
+        update({ detect: true });
+      } else if (key === 'Escape') {
+        if (input.value) {
+          event.preventDefault();
+          clearInput();
+          update({ detect: false });
+        }
+      }
+    }, true);
 
     clearBtn.addEventListener('click', function () {
       input.value = '';
