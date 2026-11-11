@@ -538,8 +538,8 @@
 
   .pad {
     display: grid;
-    grid-template-columns: repeat(var(--pad-columns, 4), 58px);
-    gap: 6px;
+    grid-template-columns: repeat(var(--pad-columns, 4), 68px);
+    gap: 7px;
     width: fit-content;
     margin: 0 auto;
     touch-action: manipulation;
@@ -547,8 +547,8 @@
 
   .pad-cell {
     visibility: hidden;
-    min-height: 46px;
-    border-radius: 11px;
+    min-height: 54px;
+    border-radius: 12px;
   }
 
   .pad button {
@@ -556,14 +556,14 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 46px;
-    padding: 6px 4px;
+    min-height: 54px;
+    padding: 7px 5px;
     border: 1px solid var(--line);
-    border-radius: 11px;
+    border-radius: 12px;
     background: rgba(255, 255, 255, .025);
     color: var(--text);
     font-family: var(--mono);
-    font-size: 17px;
+    font-size: 19px;
     font-weight: 600;
     letter-spacing: .04em;
     cursor: pointer;
@@ -597,9 +597,9 @@
   .pad button.fn.danger { color: var(--pink); }
 
   @media (max-width: 640px) {
-    .pad { grid-template-columns: repeat(var(--pad-columns, 4), 44px); gap: 5px; }
-    .pad button { min-height: 44px; font-size: 15px; }
-    .pad button.fn { font-size: 11px; }
+    .pad { grid-template-columns: repeat(var(--pad-columns, 4), 50px); gap: 6px; }
+    .pad button { min-height: 50px; font-size: 17px; }
+    .pad button.fn { font-size: 12px; }
   }
 
   .page-foot {
